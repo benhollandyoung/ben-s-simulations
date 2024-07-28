@@ -10,37 +10,60 @@ import numpy as np
 #to fix the lagrangian set all sink vertices to 0, so that nothing is done
 #for non sink-vertices use the normal degree or -1 (since we have a grid and not a multigraph)
 
+#MAYBE USE https://github.com/kivyfreakt/sandpile
+
 
 #Size of grid
 n = 15
+#Our coordinate system will be a 0 indexed, row and column system
+def coordToPlace(at: (int,int)) -> int:
+    return (at[0] * n) + at[1] + 1
+
+def placeToCoord(at: int) -> (int,int):
+    return (at - 1 / n, at-1 % n)
+
+
+def coordValid(at: (int,int)) -> bool:
+    return (i-n/2)**2 + (j-n/2)**2 < (n/2)**2
+
+
+
 #Constructing initial sandpile configuration
+
 config = np.zeros((n,n))
 
 
 for i in range(n):
     for j in range(n):
-        if (i-n/2)**2 + (j-n/2)**2 >= (n/2)**2:
-            config[i,j] = -1
+        if not coordValid((i,j)):
+            config[i,j] = None
+#print(config)
 
-#Construct the reduced Lagrangian - this is wrong acc we have 
-lagrangian = np.zeros((n,n,n))
-for i in range(n):
-    for j in range(n):
-        if (i-n/2)**2 + (j-n/2)**2 >= (n/2)**2:
-            lagrangian[i,j] = 0
+config = config.ravel()
+
+
+lagrangian = np.zeros((n**2,n**2))
+
+for i in range(n**2):
+    for j in range(n**2):
+        if config[i] == None or config[j] == None:
+            lagrangian[i,j] = None
         else:
             if i == j:
-                if i == 0 or j == 0:
-                    lagrangian[i,j] = 2
-                else:
-                    lagrangian[i,j] = 4
+                lagrangian[i,j] = 2
             else:
                 lagrangian[i,j] = -1
-
-
-
     
 
             
             
-#Create add at x function
+#Create topple at x function
+def topple(at: (int,int)):
+    global config 
+    place = coordToPlace(at)
+    config -= lagrangian[place,:]
+
+
+topple((3,5))
+config = config.reshape(n,n)
+print(config)
