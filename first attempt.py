@@ -7,7 +7,7 @@ import numpy as np
 
 
 #use an nxn array to store the state, set all sink grains to -1
-#to fix the lagrangian set all sink vertices to 0, so that nothing is done
+#to fix the laplacian set all sink vertices to 0, so that nothing is done
 #for non sink-vertices use the normal degree or -1 (since we have a grid and not a multigraph)
 
 #MAYBE USE https://github.com/kivyfreakt/sandpile
@@ -42,17 +42,17 @@ for i in range(n):
 config = config.ravel()
 
 
-lagrangian = np.zeros((n**2,n**2))
+laplacian = np.zeros((n**2,n**2))
 
 for i in range(n**2):
     for j in range(n**2):
         if config[i] == None or config[j] == None:
-            lagrangian[i,j] = None
+            laplacian[i,j] = None
         else:
             if i == j:
-                lagrangian[i,j] = 2
+                laplacian[i,j] = 2
             else:
-                lagrangian[i,j] = -1
+                laplacian[i,j] = -1
     
 
             
@@ -61,7 +61,7 @@ for i in range(n**2):
 def topple(at: (int,int)):
     global config 
     place = coordToPlace(at)
-    config -= lagrangian[place,:]
+    config -= laplacian[place,:]
 
 
 topple((3,5))
