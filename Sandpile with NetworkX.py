@@ -117,15 +117,29 @@ class Sandpile:
     def unstable(self):
         return [self.matrixToCart(node) for node in self.G.nodes if self.G.degree[node] <= self.G.nodes[node]['grains']  ]
 
-    # Stabilises the sandpile from current state
-    def stabilise(self):
+    # Stabilises the sandpile from current state, and returns number of topplings for each point from points
+    def stabilise(self,points=[]):
         unstableVertices = self.unstable()
-        while len(unstableVertices) != 0:
-            for entry in unstableVertices:
-                point = (entry[0], entry[1])
-                self.topple(point)
-            unstableVertices = self.unstable()
+        
+        if points != []:
+            counts = {key: 0 for key in points}
+            while len(unstableVertices) != 0:
+                for entry in unstableVertices:
+                    point = (entry[0], entry[1])
+                    self.topple(point)
+                    if point in points:
+                        counts[point] += 1
+
+                unstableVertices = self.unstable()
+            return counts
+        else:
+            while len(unstableVertices) != 0:
+                for entry in unstableVertices:
+                    point = (entry[0], entry[1])
+                    self.topple(point)
+                unstableVertices = self.unstable()
     
+    # Sets a sandpile to a certain config
     def set(self,config):
         for node in self.G.nodes:
             if node != 'sink':
@@ -171,9 +185,7 @@ class Sandpile:
         plt.yscale
         plt.show()
 
-# Creating the sandpile and configurating it
-n = 5
-sandpile = Sandpile(n)
+
 
 
 
@@ -194,7 +206,7 @@ def random_walk_until(G,start, end_set):
 
 # Loop-erase a path
 
-#LERW   
+# LERW   
 def loop_erased_random_walk(G, start, end_set):
     path, end = random_walk_until(G, start, end_set)
     #print(path)
@@ -215,7 +227,7 @@ def loop_erased_random_walk(G, start, end_set):
     return newPath, end
 
 
-# plotting a loop-erased RW
+# Test function plotting a loop-erased RW
 def test():
 
         walk, end = loop_erased_random_walk(sandpile.G, (10,10), ['sink'])
@@ -280,14 +292,13 @@ def wilson_algorithm(G):
                     multi_d_graph.add_edge(rw[i-1],rw[i])
 
 
-
+    multi_d_graph = multi_d_graph.reverse()
     return multi_d_graph
 
 
-wilsons = wilson_algorithm(sandpile.G)
 
 
-# some plotting functions
+# Some test plotting functions
 def plot(tree):
         data = nx.get_node_attributes(tree, 'distance') 
         del data['sink']
@@ -345,11 +356,10 @@ def plot3(tree):
     # Display the graph
     plt.show()
 
-plot3(wilsons)
 
 
 
-# take a uniform spanning tree and turn into a recurrent sandpile config.
+# Takes a sandpile and generates a random recurrent configuration of it
 def treeToSandpile(sandpile):
     tree = wilson_algorithm(sandpile.G)
     G = sandpile.G
@@ -370,10 +380,96 @@ def treeToSandpile(sandpile):
                 if dist+1 == nodeDist: # burnt in the previous step
                     if len(list(tree.successors(node))) > 0 and list(tree.successors(node))[0]  == neighb: # the chosen one in the ordering
                         found = True
-                    if found:
+                    if not found:
                         height -= 1
             positions[node] = height
     return positions
-#config = treeToSandpile(sandpile)
-#sandpile.set(config)
-#sandpile.plot()
+
+
+import time
+# Test function which plots 100 plots, 1 per 0.1s
+def multiPlot():
+    time.sleep(1)
+    plt.ion()
+    for _ in range(10):
+        # Clear the previous plot
+        time.sleep(1)
+        plt.clf()
+        config = treeToSandpile(sandpile)
+        sandpile.set(config)
+        
+        
+        
+        # Plot the new configuration
+        sandpile.plot()
+        
+        # Pause to allow the plot to render
+        plt.pause(0.1)  # Slight pause to ensure the plot updates
+
+
+
+
+
+# Möbius function evaluator from cartesian -> cartesian  
+def applyTransformation(transformation,point,n):
+    z = complex(point[0], point[1])
+    
+    phi = transformation[0]
+    b = transformation[1]
+
+    
+    
+    if abs(b) >=1 :
+        print("Invalid transformation: b must have absolute value  less than 1")
+        return
+    
+
+
+    w = complex(np.cos(phi), np.sin(phi)) * (z + b) / (np.conj(b)*z+1)
+
+    
+    return (round(w.real), round(w.imag)) 
+
+
+# Function which outputs the number of topplings at x * # of topplings at y, as well as the transformed versions
+def countTopplings(x,y,phi,trials=10):
+    topplings = [] #of the tuple form (number of topplings at x * number of topplings at y, number of topplings at phi(x) * number of topplings at phi(y) )
+    phix = applyTransformation(phi,x,n)
+    phiy = applyTransformation(phi,y,n)
+
+    for _ in range(trials):
+        config = treeToSandpile(sandpile)
+
+        #first go
+        sandpile.set(config)
+        sandpile.addAt((0,0))
+        counts1 = sandpile.stabilise([x,y]) #counts1 should be {x:# of topplings at x, y: # of topplings at y}
+
+
+        #second go
+        sandpile.set(config)
+        sandpile.addAt(applyTransformation(phi,(0,0),n))
+        counts2 = sandpile.stabilise([phix,phiy]) #counts2 should be {x:# of topplings at phix, y: # of topplings at phiy}
+      
+        
+        topplings.append((counts1[x]*counts1[y],counts2[phix]*counts2[phiy] ))
+    return topplings
+
+# Creating the sandpile and configurating it
+n = 50
+sandpile = Sandpile(n)
+wilsons = wilson_algorithm(sandpile.G)
+
+x = (4,5)
+y = (-3,6)
+trans = (2,complex(0.5,0.5))
+topples = countTopplings(x,y,trans,trials=50)
+
+#when I'm ready I can print directly into a csv file 
+import numpy as np
+col1 = [int(topple[0]) for topple in topples]
+col2 = [int(topple[1]) for topple in topples]
+
+
+data = np.column_stack((col1, col2))
+np.savetxt('data.csv', data, delimiter=',', fmt='%d')

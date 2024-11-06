@@ -1,0 +1,13 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "C/C++ Runner: Debug Session",
+      "type": "lldb",
+      "request": "launch",
+      "args": [],
+      "cwd": "/Users/benholland/Desktop/UNI/Year 3 (at bath)/Summer Project/ben's simulations",
+      "program": "/Users/benholland/Desktop/UNI/Year 3 (at bath)/Summer Project/ben's simulations/build/Debug/outDebug"
+    }
+  ]
+}
